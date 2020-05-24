@@ -2,7 +2,7 @@
   :version "0.1.0"
   :author ""
   :license ""
-  :depends-on ("alexandria" "serapeum")
+  :depends-on ("alexandria" "serapeum" "afp-lol-workshop")
   :components ((:module "src"
                 :components
                 ((:file "main"))))

@@ -1,6 +1,8 @@
 (defpackage afp-forth-demo
   (:use :cl)
-  (:local-nicknames (:a :alexandria)))
+  (:export
+   #:*forth-registers*))
+
 (in-package :afp-forth-demo)
 
 #|
@@ -11,7 +13,7 @@ registers on the forth machine
 - compiling : 
 - dtable : 
 |#
-(defparameter forth-registers
+(defvar *forth-registers*
   '(pstack rstack pc dict compiling dtable))
 
 #|
@@ -133,13 +135,13 @@ strategies:
 ;;   (funcall *new-forth* 'print))
 
 (defmacro square (x)
-  (a:once-only (x)
+  (alexandria:once-only (x)
     `(* ,x ,x)))
 
 (square (+ 1 2))
 
 (defmacro go-forth (forth &body words)
-  (a:once-only (forth)
+  (alexandria:once-only (forth)
     `(dolist (w ',words)
        (funcall ,forth w))))
 
@@ -147,8 +149,6 @@ strategies:
 ;;   3 dup * print)
 
 ;; variable representing our standard library
-(load #P"~/.roswell/local-projects/afp-lol-workshop/src/pandoric-macros.lisp")
-
 (defvar *forth-stdlib* '())
 
 (defmacro forth-stdlib-add (&body all)
@@ -170,28 +170,28 @@ strategies:
      this))
 
 (defmacro new-forth-interpreter ()
-  `(alet% ,forth-registers
+  `(alet% ,*forth-registers*
      (setf dtable (make-hash-table))
      (forth-install-primitives)
      (dolist (v *forth-stdlib*)
        (funcall this v))
-     (lambda (v) ,forth-registers
+     (plambda ((quote v)) ,*forth-registers*
        (let ((word (forth-lookup v dict)))
 	 (if word
 	     (forth-handle-found)
 	     (forth-handle-not-found))))))
 
-(defmacro forth-install-primitives ()
-  `(progn
-     ,@(mapcar #'(let ((thread (lambda () ,@(cddr a1))))
-		   (setf dict (make-forth-word
-			       :name ',(car a1)
-			       :prev dict
-			       :immediate ,(cadr a1)
-			       :thread thread)
-			 (gethash thread dtable) ',(cddr a1)))
-	       *forth-primitive-forms*)))
+;; (defmacro forth-install-primitives ()
+;;   `(progn
+;;      ,@(mapcar #'(let ((thread (lambda () ,@(cddr a1))))
+;; 		   (setf dict (make-forth-word
+;; 			       :name ',(car a1)
+;; 			       :prev dict
+;; 			       :immediate ,(cadr a1)
+;; 			       :thread thread)
+;; 			 (gethash thread dtable) ',(cddr a1)))
+;; 	       *forth-primitive-forms*)))
 
-(defvar *new-forth* (new-forth-interpreter))
+;; (defvar *new-forth* (new-forth-interpreter))
 
 
