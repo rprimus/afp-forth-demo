@@ -5,6 +5,8 @@
 
 (in-package :afp-forth-demo)
 
+(named-readtables:in-readtable :reader-macros)
+
 #|
 registers on the forth machine
 - pstack : parameter stack (where parameters will be stored until operation requires them)
@@ -145,9 +147,6 @@ strategies:
     `(dolist (w ',words)
        (funcall ,forth w))))
 
-;; (go-forth *new-forth*
-;;   3 dup * print)
-
 ;; variable representing our standard library
 (defvar *forth-stdlib* '())
 
@@ -156,42 +155,42 @@ strategies:
 	 (nconc *forth-stdlib*
 		',all)))
 
-(defmacro alet (letargs &body body)
-  `(let ((this) ,@letargs)
-     (setq this ,@(last body))
-     ,@(butlast body)
-     (lambda (&rest params)
-       (apply this params))))
-
-(defmacro alet% (letargs &body body)
-  `(let ((this) ,@letargs)
-     (setf this ,@(last body))
-     ,@(butlast body)
-     this))
-
 (defmacro new-forth-interpreter ()
-  `(alet% ,*forth-registers*
+  `(anaphoric-macros:alet% ,*forth-registers*
      (setf dtable (make-hash-table))
      (forth-install-primitives)
      (dolist (v *forth-stdlib*)
-       (funcall this v))
-     (plambda ((quote v)) ,*forth-registers*
+       (funcall anaphoric-macros::this v))
+     (pandoric-macros:plambda (v) ,*forth-registers*
        (let ((word (forth-lookup v dict)))
 	 (if word
 	     (forth-handle-found)
 	     (forth-handle-not-found))))))
 
-;; (defmacro forth-install-primitives ()
-;;   `(progn
-;;      ,@(mapcar #'(let ((thread (lambda () ,@(cddr a1))))
-;; 		   (setf dict (make-forth-word
-;; 			       :name ',(car a1)
-;; 			       :prev dict
-;; 			       :immediate ,(cadr a1)
-;; 			       :thread thread)
-;; 			 (gethash thread dtable) ',(cddr a1)))
-;; 	       *forth-primitive-forms*)))
+(defmacro forth-install-primitives ()
+  `(progn
+     ,@(mapcar #`(let ((thread (lambda () ,@(cddr a1))))
+		   (setf dict (make-forth-word
+			       :name ',(car a1)
+			       :prev dict
+			       :immediate ,(cadr a1)
+			       :thread thread)
+			 (gethash thread dtable) ',(cddr a1)))
+	       *forth-primitive-forms*)))
 
-;; (defvar *new-forth* (new-forth-interpreter))
+(defmacro forth-handle-found ()
+  `(forth-inner-interpreter))
 
+(defmacro forth-handle-not-found ())
 
+(defvar *new-forth* (new-forth-interpreter))
+
+;; example from Ch. 8 LoL
+(go-forth *new-forth* 1 2.0 "three" 'four '(f i v e))
+(go-forth *new-forth*
+  3 dup * print)
+
+(pandoric-macros:with-pandoric (pstack) *new-forth*
+  pstack)
+
+(named-readtables:in-readtable :standard)
